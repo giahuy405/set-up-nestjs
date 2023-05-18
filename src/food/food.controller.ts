@@ -1,20 +1,37 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { FoodService } from './food.service';
 import { CreateFoodDto } from './dto/create-food.dto';
 import { UpdateFoodDto } from './dto/update-food.dto';
+import { AuthGuard } from '@nestjs/passport';
+import { Request } from 'express';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
 
 @Controller('food')
 export class FoodController {
   constructor(private readonly foodService: FoodService) {}
+  
 
-  @Post()
-  create(@Body() createFoodDto: CreateFoodDto) {
-    return this.foodService.create(createFoodDto);
+
+
+  @UseInterceptors(FileInterceptor("file",{ // tên trùng tới bên FE gửi lên
+    storage:diskStorage({
+      destination:process.cwd() + "/public/imgs",
+      filename:(req,file,callback)=>callback(null,Date.now() + "_" + file.originalname)
+    })
+  }))
+
+  @Post('upload-avatar')
+  uploadAvatar(@UploadedFile() file:Express.Multer.File) {
+  return file
   }
+ 
 
+  @UseGuards(AuthGuard("jwt"))
   @Get()
-  findAll() {
-    return this.foodService.findAll();
+  findAll(@Req() req:Request) {
+    let token = req.user;
+    return token
   }
 
   @Get(':id')
